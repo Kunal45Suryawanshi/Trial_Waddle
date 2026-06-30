@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUARD
+  SUPERVISOR
+  HOST
+  ADMIN
+}
+
+enum PassStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  EXPIRED
+  DENIED
+  CANCELLED
+}
+
+enum VisitType {
+  PLANNED
+  UNPLANNED
+  RECURRING
+  EMERGENCY
+  BULK_EVENT
+}
+
+enum VisitStatus {
+  INSIDE
+  EXITED
+  OVERSTAY
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  DENIED
+  EXPIRED
+}
+
+enum OverrideType {
+  MANUAL
+  EMERGENCY
+  SUPERVISOR
+}
+
+enum VerificationResult {
+  GREEN
+  RED
+  YELLOW
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String?  @unique
+  name       String
+  phone      String?
+  role       Role
+  guardId    String?  @unique
+  pinHash    String?
+  passwordHash String?
+  department String?
+  createdAt  DateTime @default(now())
+
+  hostedPasses     VisitorPass[]     @relation("HostPasses")
+  guardEntries     Visit[]           @relation("GuardEntries")
+  overrides        OverrideLog[]
+  incidents        Incident[]
+  auditLogs        AuditLog[]
+  approvalRequests ApprovalRequest[] @relation("HostApprovals")
+}
+
+model Gate {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now())
+
+  visits Visit[]
+}
+
+model VisitorPass {
+  id              String     @id @default(cuid())
+  visitorName     String
+  visitorPhone    String
+  purpose         String
+  hostId          String?
+  host            User?      @relation("HostPasses", fields: [hostId], references: [id])
+  status          PassStatus @default(PENDING)
+  visitType       VisitType  @default(PLANNED)
+  expectedArrival DateTime?
+  validUntil      DateTime
+  organization    String?
+  approvedZones   String?
+  qrSecret        String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  visits           Visit[]
+  approvalRequests ApprovalRequest[]
+  qrTokens         QrToken[]
+  overrides        OverrideLog[]
+}
+
+model Visit {
+  id        String      @id @default(cuid())
+  passId    String
+  pass      VisitorPass @relation(fields: [passId], references: [id])
+  gateId    String
+  gate      Gate        @relation(fields: [gateId], references: [id])
+  guardId   String
+  guard     User        @relation("GuardEntries", fields: [guardId], references: [id])
+  entryAt   DateTime    @default(now())
+  exitAt    DateTime?
+  status    VisitStatus @default(INSIDE)
+  createdAt DateTime    @default(now())
+}
+
+model ApprovalRequest {
+  id          String         @id @default(cuid())
+  passId      String
+  pass        VisitorPass    @relation(fields: [passId], references: [id])
+  hostId      String
+  host        User           @relation("HostApprovals", fields: [hostId], references: [id])
+  status      ApprovalStatus @default(PENDING)
+  requestedAt DateTime       @default(now())
+  respondedAt DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime       @default(now())
+}
+
+model QrToken {
+  id        String      @id @default(cuid())
+  passId    String
+  pass      VisitorPass @relation(fields: [passId], references: [id])
+  token     String      @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime    @default(now())
+}
+
+model OverrideLog {
+  id        String       @id @default(cuid())
+  guardId   String
+  guard     User         @relation(fields: [guardId], references: [id])
+  passId    String?
+  pass      VisitorPass? @relation(fields: [passId], references: [id])
+  type      OverrideType
+  reason    String
+  createdAt DateTime     @default(now())
+}
+
+model Incident {
+  id          String   @id @default(cuid())
+  guardId     String
+  guard       User     @relation(fields: [guardId], references: [id])
+  description String
+  photoUrl    String?
+  createdAt   DateTime @default(now())
+}
+
+model BlacklistEntry {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String?
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model OtpSession {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  metadata   String?
+  createdAt  DateTime @default(now())
+}
+
+model OfflineCache {
+  id           String   @id @default(cuid())
+  passId       String   @unique
+  visitorName  String
+  visitorPhone String
+  status       String
+  validUntil   DateTime
+  syncedAt     DateTime @default(now())
+}
