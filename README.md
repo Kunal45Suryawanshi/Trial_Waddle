@@ -1,8 +1,17 @@
 # IIML Secure Visitor Access Platform (SVAP)
 
-**Zero friction for legitimate visitors. Maximum control for campus security.**
+The **IIML Secure Visitor Access Platform (SVAP)** is a comprehensive campus security solution designed to manage and monitor visitor entry and exit at IIM Lucknow. Built as a Phase 1 MVP, it replaces traditional paper-based logs with a modern, fast, and secure digital auditing system.
 
-MVP Phase 1 implementation of the IIML campus visitor access platform per PRD.
+The application features three specialized portals:
+1. **Guard Tablet (`/guard`)**: A single-screen PWA interface for campus gates enabling real-time QR code scanning, phone-number-based lookups, emergency entry logging, and incident reporting.
+2. **Host Portal (`/host`)**: An interface for hosts (students, faculty, administrative staff) to pre-register planned visitors, review and approve unplanned visitor access requests in real-time, and view visitor logs.
+3. **Admin Dashboard (`/admin`)**: A centralized management panel for security administrators to monitor real-time campus occupancy, view detailed override audits, manage blacklists, and generate passes for bulk events.
+
+### Core Mechanisms
+- **Dynamic Security Passes**: Visitors receive secure QR codes generated using HMAC-SHA256 signatures that automatically rotate every 30 seconds to prevent replay attacks.
+- **Verification Engine**: Instantly checks visitors against custom rules and blacklists, returning verification states (GREEN, YELLOW, RED).
+- **Authentication**: Secured with HTTP-only JWT cookies for administrators, guards, and hosts, using simulated OTPs in development mode.
+- **Resilient Infrastructure**: Constructed using Next.js 15, Prisma ORM, and PostgreSQL, designed to run seamlessly on Vercel with automatic schema synchronization and offline client caching.
 
 ## Quick Start
 
